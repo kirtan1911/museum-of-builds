@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metro Dash — Endless Runner</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Inter:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky1:#1b1035;
+    --sky2:#3a1d6e;
+    --neon:#00e5ff;
+    --pink:#ff2fa0;
+    --gold:#ffd23f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#0a0714;
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    overflow:hidden;
+  }
+  h1,.title-font{font-family:'Baloo 2',cursive;}
+
+  #gameWrap{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    max-width:520px;
+    max-height:900px;
+    margin:0 auto;
+    overflow:hidden;
+    box-shadow:0 0 60px rgba(0,229,255,.15);
+  }
+  #gameCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+    background:linear-gradient(var(--sky1),var(--sky2));
+  }
+
+  .hud{
+    position:absolute;top:0;left:0;right:0;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:.8rem 1rem;
+    z-index:5;
+    pointer-events:none;
+  }
+  .hud-chip{
+    background:rgba(10,7,20,.55);
+    border:1px solid rgba(0,229,255,.4);
+    border-radius:10px;
+    padding:.3rem .8rem;
+    font-weight:700;
+    font-size:1rem;
+  }
+  #coinChip{color:var(--gold);}
+  #scoreChip{color:var(--neon);}
+
+  .overlay{
+    position:absolute;inset:0;
+    background:rgba(6,4,14,.88);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;z-index:10;
+    padding:1.5rem;
+  }
+  .overlay h1{
+    font-size:2.4rem;
+    background:linear-gradient(90deg,var(--neon),var(--pink));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:.3rem;
+  }
+  .overlay p{color:#cfc9e0;font-size:.95rem;}
+  .btn-neon{
+    background:linear-gradient(90deg,var(--neon),var(--pink));
+    border:none;color:#0a0714;font-weight:800;
+    padding:.7rem 2.2rem;border-radius:30px;font-size:1.05rem;
+    margin-top:1rem;
+  }
+  .btn-neon:hover{filter:brightness(1.1);color:#0a0714;}
+  .controls-hint{
+    display:flex;gap:1rem;margin-top:1.4rem;flex-wrap:wrap;justify-content:center;
+    font-size:.78rem;color:#9d95bf;
+  }
+  .controls-hint span{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:8px;padding:.3rem .6rem;
+  }
+  #finalScoreLine{font-size:1.4rem;font-weight:800;color:var(--gold);margin:.6rem 0;}
+  #hiScoreLine{color:#9d95bf;font-size:.9rem;}
+
+  #pauseBtn{
+    position:absolute;top:.7rem;right:.7rem;z-index:6;
+    background:rgba(10,7,20,.55);border:1px solid rgba(255,255,255,.2);
+    color:#fff;border-radius:8px;padding:.3rem .6rem;font-size:.9rem;
+  }
+  #muteBtn{
+    position:absolute;top:.7rem;right:3.4rem;z-index:6;
+    background:rgba(10,7,20,.55);border:1px solid rgba(255,255,255,.2);
+    color:#fff;border-radius:8px;padding:.3rem .6rem;font-size:.9rem;
+  }
+</style>
+</head>
+<body>
+
+<div id="gameWrap">
+  <canvas id="gameCanvas"></canvas>
+
+  <div class="hud">
+    <span class="hud-chip" id="scoreChip">🏁 0</span>
+    <span class="hud-chip" id="coinChip">🪙 0</span>
+  </div>
+
+  <button id="pauseBtn">⏸</button>
+  <button id="muteBtn">🔊</button>
+
+  <!-- START SCREEN -->
+  <div class="overlay" id="startScreen">
+    <h1 class="title-font">METRO DASH</h1>
+    <p>Dodge trains, slide under bars, jump the barriers — grab every coin you can!</p>
+    <button class="btn-neon" id="startBtn">▶ Start Run</button>
+    <div class="controls-hint">
+      <span>⬅ ➡ / A D — switch lane</span>
+      <span>⬆ / Space / W — jump</span>
+      <span>⬇ / S — slide</span>
+      <span>📱 Swipe on mobile</span>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div class="overlay" id="gameOverScreen" style="display:none;">
+    <h1 class="title-font">CRASHED!</h1>
+    <div id="finalScoreLine">Score: 0</div>
+    <div id="hiScoreLine">Best: 0</div>
+    <button class="btn-neon" id="retryBtn">🔁 Run Again</button>
+  </div>
+
+  <!-- PAUSE SCREEN -->
+  <div class="overlay" id="pauseScreen" style="display:none;">
+    <h1 class="title-font">PAUSED</h1>
+    <button class="btn-neon" id="resumeBtn">▶ Resume</button>
+  </div>
+</div>
+
+<script>
+/* ============ CANVAS SETUP ============ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('gameWrap');
+
+function fitCanvas(){
+  const rect = wrap.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
+
+/* ============ AUDIO ENGINE (all synthesized — no external files) ============ */
+const Audio1 = {
+  ctx: null,
+  muted: false,
+  masterGain: null,
+  musicNodes: [],
+  musicTimer: null,
+
+  init(){
+    if(this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AC();
+    this.masterGain = this.ctx.createGain();
+    this.masterGain.gain.value = 0.9;
+    this.masterGain.connect(this.ctx.destination);
+  },
+  resume(){
+    this.init();
+    if(this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  toggleMute(){
+    this.muted = !this.muted;
+    if(this.masterGain) this.masterGain.gain.value = this.muted ? 0 : 0.9;
+    return this.muted;
+  },
+
+  tone(freq, dur, type='sine', startGain=0.3, glideTo=null, delay=0){
+    if(!this.ctx || this.muted) return;
+    const t0 = this.ctx.currentTime + delay;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if(glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + dur);
+    gain.gain.setValueAtTime(startGain, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    osc.connect(gain).connect(this.masterGain);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.02);
+  },
+
+  noiseBurst(dur, startGain=0.5, filterFreq=1800, delay=0){
+    if(!this.ctx || this.muted) return;
+    const t0 = this.ctx.currentTime + delay;
+    const bufferSize = this.ctx.sampleRate * dur;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(filterFreq, t0);
+    filter.frequency.exponentialRampToValueAtTime(60, t0 + dur);
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(startGain, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    noise.connect(filter).connect(gain).connect(this.masterGain);
+    noise.start(t0);
+    noise.stop(t0 + dur + 0.02);
+  },
+
+  jump(){ this.tone(320, 0.22, 'square', 0.28, 780); },
+  slide(){ this.noiseBurst(0.35, 0.35, 2400); },
+  laneSwitch(){ this.tone(600, 0.09, 'sawtooth', 0.15, 900); },
+  coin(){
+    this.tone(880, 0.09, 'triangle', 0.3);
+    this.tone(1320, 0.14, 'triangle', 0.25, null, 0.06);
+  },
+  crash(){
+    this.noiseBurst(0.5, 0.7, 2200);
+    this.tone(90, 0.5, 'sawtooth', 0.5, 40, 0.02);
+  },
+  click(){ this.tone(500, 0.06, 'square', 0.18, 700); },
+  countTick(){ this.tone(700, 0.05, 'square', 0.2); },
+
+  startMusic(){
+    if(!this.ctx || this.muted) return;
+    this.stopMusic();
+    const bassPattern = [55, 55, 82.4, 55, 65.4, 55, 73.4, 65.4];
+    let step = 0;
+    const playStep = () => {
+      if(this.muted){ step++; this.musicTimer = setTimeout(playStep, 260); return; }
+      const t0 = this.ctx.currentTime;
+      const freq = bassPattern[step % bassPattern.length];
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0.12, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+      osc.connect(gain).connect(this.masterGain);
+      osc.start(t0);
+      osc.stop(t0 + 0.24);
+      if(step % 4 === 0) this.noiseBurst(0.06, 0.15, 4000);
+      step++;
+      this.musicTimer = setTimeout(playStep, 230);
+    };
+    playStep();
+  },
+  stopMusic(){
+    if(this.musicTimer) clearTimeout(this.musicTimer);
+    this.musicTimer = null;
+  }
+};
+
+/* ============ GAME CONSTANTS ============ */
+const LANES = 3;
+const NEAR_T = 1;
+const FAR_T = 0;
+const TRACK_Z_LEN = 1400;
+const PLAYER_Z = 60;
+const JUMP_DURATION = 480;
+const SLIDE_DURATION = 480;
+
+let state = 'idle'; // idle, playing, paused, gameover
+let worldSpeed = 260; // z units per second
+let elapsedMs = 0;
+let score = 0;
+let coins = 0;
+let bestScore = 0;
+
+let player = {
+  lane: 1,
+  jumping:false, jumpStart:0,
+  sliding:false, slideStart:0
+};
+
+let entities = []; // {type:'train'|'barrier'|'overhead'|'coin', lane, z, collected, passed}
+let spawnTimer = 0;
+let spawnInterval = 900;
+
+/* ============ STORAGE (best score) ============ */
+async function loadBest(){
+  try{
+    const res = await window.storage.get('metrodash:best', false);
+    if(res) bestScore = parseInt(res.value) || 0;
+  }catch(e){ bestScore = 0; }
+  document.getElementById('hiScoreLine').textContent = 'Best: ' + bestScore;
+}
+async function saveBestIfNeeded(){
+  if(score > bestScore){
+    bestScore = score;
+    try{ await window.storage.set('metrodash:best', String(bestScore), false); }catch(e){}
+  }
+}
+loadBest();
+
+/* ============ LANE / PERSPECTIVE HELPERS ============ */
+function laneNearX(lane){
+  const w = canvas.width;
+  const positions = [w*0.22, w*0.5, w*0.78];
+  return positions[lane];
+}
+function laneFarX(lane){
+  const w = canvas.width;
+  const positions = [w*0.42, w*0.5, w*0.58];
+  return positions[lane];
+}
+function horizonY(){ return canvas.height * 0.34; }
+function baseY(){ return canvas.height * 0.94; }
+
+function tFromZ(z){
+  return 1 - Math.min(1, Math.max(0, z / TRACK_Z_LEN));
+}
+function screenYForT(t){
+  return horizonY() + t * (baseY() - horizonY());
+}
+function scaleForT(t){
+  return 0.12 + t * 0.98;
+}
+function xForLaneT(lane, t){
+  const near = laneNearX(lane);
+  const far = laneFarX(lane);
+  return far + (near - far) * t;
+}
+
+/* ============ INPUT ============ */
+function tryJump(){
+  if(state !== 'playing') return;
+  if(!player.jumping && !player.sliding){
+    player.jumping = true;
+    player.jumpStart = performance.now();
+    Audio1.jump();
+  }
+}
+function trySlide(){
+  if(state !== 'playing') return;
+  if(!player.sliding && !player.jumping){
+    player.sliding = true;
+    player.slideStart = performance.now();
+    Audio1.slide();
+  }
+}
+function tryLane(dir){
+  if(state !== 'playing') return;
+  const newLane = Math.max(0, Math.min(LANES-1, player.lane + dir));
+  if(newLane !== player.lane) Audio1.laneSwitch();
+  player.lane = newLane;
+}
+
+window.addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase();
+  if(k === 'arrowleft' || k === 'a') tryLane(-1);
+  else if(k === 'arrowright' || k === 'd') tryLane(1);
+  else if(k === 'arrowup' || k === 'w' || k === ' ') { e.preventDefault(); tryJump(); }
+  else if(k === 'arrowdown' || k === 's') trySlide();
+});
+
+let touchStartX=0, touchStartY=0;
+canvas.addEventListener('touchstart', (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+});
+canvas.addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if(Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30){
+    tryLane(dx > 0 ? 1 : -1);
+  }else if(Math.abs(dy) > 30){
+    if(dy < 0) tryJump(); else trySlide();
+  }
+});
+
+/* ============ SPAWNING ============ */
+function spawnWave(){
+  const blockedLane = Math.floor(Math.random() * LANES);
+  const typeRoll = Math.random();
+  let obstacleType = 'train';
+  if(typeRoll < 0.35) obstacleType = 'barrier';
+  else if(typeRoll < 0.6) obstacleType = 'overhead';
+
+  entities.push({ type: obstacleType, lane: blockedLane, z: TRACK_Z_LEN, passed:false });
+
+  // Coins in a safe (non-blocked) lane, small trail
+  const safeLanes = [0,1,2].filter(l => l !== blockedLane);
+  if(Math.random() < 0.8){
+    const coinLane = safeLanes[Math.floor(Math.random()*safeLanes.length)];
+    for(let i=0;i<4;i++){
+      entities.push({ type:'coin', lane: coinLane, z: TRACK_Z_LEN + i*70, collected:false });
+    }
+  }
+}
+
+/* ============ GAME LOOP ============ */
+let lastTime = null;
+
+function resetGame(){
+  score = 0; coins = 0; elapsedMs = 0;
+  worldSpeed = 260;
+  spawnInterval = 900;
+  spawnTimer = 0;
+  entities = [];
+  player.lane = 1; player.jumping=false; player.sliding=false;
+  document.getElementById('scoreChip').textContent = '🏁 0';
+  document.getElementById('coinChip').textContent = '🪙 0';
+}
+
+function startGame(){
+  resetGame();
+  state = 'playing';
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameOverScreen').style.display = 'none';
+  document.getElementById('pauseScreen').style.display = 'none';
+  lastTime = performance.now();
+  requestAnimationFrame(loop);
+}
+
+function loop(now){
+  if(state !== 'playing'){ return; }
+  const dt = Math.min(50, now - lastTime);
+  lastTime = now;
+  update(dt, now);
+  render(now);
+  requestAnimationFrame(loop);
+}
+
+function update(dt, now){
+  elapsedMs += dt;
+  worldSpeed = 260 + elapsedMs * 0.012; // gradually speeds up
+  spawnInterval = Math.max(420, 900 - elapsedMs * 0.03);
+
+  score = Math.floor(elapsedMs / 100) + coins * 10;
+  document.getElementById('scoreChip').textContent = '🏁 ' + score;
+
+  spawnTimer += dt;
+  if(spawnTimer >= spawnInterval){
+    spawnTimer = 0;
+    spawnWave();
+  }
+
+  const dz = worldSpeed * (dt/1000);
+  entities.forEach(en => { en.z -= dz; });
+
+  if(player.jumping && now - player.jumpStart > JUMP_DURATION) player.jumping = false;
+  if(player.sliding && now - player.slideStart > SLIDE_DURATION) player.sliding = false;
+
+  // collision / collection
+  entities.forEach(en => {
+    if(en.lane !== player.lane) return;
+    if(en.type === 'coin'){
+      if(!en.collected && en.z <= PLAYER_Z + 30 && en.z > PLAYER_Z - 60){
+        en.collected = true;
+        coins++;
+        Audio1.coin();
+        document.getElementById('coinChip').textContent = '🪙 ' + coins;
+      }
+      return;
+    }
+    if(!en.passed && en.z <= PLAYER_Z && en.z > PLAYER_Z - 50){
+      en.passed = true;
+      let hit = false;
+      if(en.type === 'train') hit = true; // must change lane, jump/slide won't save you
+      if(en.type === 'barrier') hit = !player.jumping;
+      if(en.type === 'overhead') hit = !player.sliding;
+      if(hit) triggerGameOver();
+    }
+  });
+
+  entities = entities.filter(en => en.z > PLAYER_Z - 200);
+}
+
+async function triggerGameOver(){
+  if(state !== 'playing') return;
+  state = 'gameover';
+  Audio1.crash();
+  Audio1.stopMusic();
+  await saveBestIfNeeded();
+  document.getElementById('finalScoreLine').textContent = 'Score: ' + score;
+  document.getElementById('hiScoreLine').textContent = 'Best: ' + bestScore;
+  document.getElementById('gameOverScreen').style.display = 'flex';
+}
+
+/* ============ RENDER ============ */
+function render(now){
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // sky gradient already via CSS background; draw distant skyline
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  for(let i=0;i<6;i++){
+    const bx = (i*97 + (elapsedMs*0.01)) % (w+120) - 60;
+    const bh = 40 + (i%3)*30;
+    ctx.fillRect(bx, horizonY()-bh, 50, bh);
+  }
+
+  // track (trapezoid)
+  const hy = horizonY(), by = baseY();
+  ctx.beginPath();
+  ctx.moveTo(laneFarX(0)-30, hy);
+  ctx.lineTo(laneFarX(2)+30, hy);
+  ctx.lineTo(laneNearX(2)+60, by);
+  ctx.lineTo(laneNearX(0)-60, by);
+  ctx.closePath();
+  ctx.fillStyle = '#161022';
+  ctx.fill();
+
+  // lane divider lines
+  ctx.strokeStyle = 'rgba(0,229,255,0.35)';
+  ctx.lineWidth = 2;
+  for(let l=0;l<=LANES;l++){
+    const farX = l===0 ? laneFarX(0)-30 : l===LANES ? laneFarX(2)+30 : (laneFarX(l-1)+laneFarX(l))/2;
+    const nearX = l===0 ? laneNearX(0)-60 : l===LANES ? laneNearX(2)+60 : (laneNearX(l-1)+laneNearX(l))/2;
+    ctx.beginPath();
+    ctx.moveTo(farX, hy);
+    ctx.lineTo(nearX, by);
+    ctx.stroke();
+  }
+
+  // sort entities by z desc (far first) so near draws on top
+  const sorted = [...entities].sort((a,b) => b.z - a.z);
+  sorted.forEach(en => drawEntity(en));
+
+  drawPlayer(now);
+}
+
+function drawEntity(en){
+  const t = tFromZ(Math.max(0, en.z));
+  if(en.z < -100) return;
+  const sx = xForLaneT(en.lane, t);
+  const sy = screenYForT(t);
+  const scale = scaleForT(t);
+
+  if(en.type === 'coin'){
+    if(en.collected) return;
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath();
+    ctx.arc(sx, sy - 40*scale, 12*scale, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = '#a87d00';
+    ctx.lineWidth = 2*scale;
+    ctx.stroke();
+    return;
+  }
+
+  const bw = 70*scale;
+  if(en.type === 'train'){
+    ctx.fillStyle = '#ff2fa0';
+    ctx.fillRect(sx - bw/2, sy - 130*scale, bw, 130*scale);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(sx - bw/2 + 6*scale, sy - 115*scale, bw-12*scale, 40*scale);
+  }else if(en.type === 'barrier'){
+    ctx.fillStyle = '#00e5ff';
+    ctx.fillRect(sx - bw/2, sy - 34*scale, bw, 34*scale);
+  }else if(en.type === 'overhead'){
+    ctx.fillStyle = '#ffd23f';
+    ctx.fillRect(sx - bw/2, sy - 130*scale, bw, 22*scale);
+    ctx.fillRect(sx - bw/2, sy - 130*scale, 8*scale, 100*scale);
+    ctx.fillRect(sx + bw/2 - 8*scale, sy - 130*scale, 8*scale, 100*scale);
+  }
+}
+
+function drawPlayer(now){
+  const t = 0.97;
+  const sx = xForLaneT(player.lane, t);
+  let sy = screenYForT(t);
+  const scale = scaleForT(t);
+
+  let jumpOffset = 0;
+  if(player.jumping){
+    const progress = Math.min(1, (now - player.jumpStart) / JUMP_DURATION);
+    jumpOffset = Math.sin(progress * Math.PI) * 90;
+  }
+  let heightMod = 1;
+  if(player.sliding) heightMod = 0.55;
+
+  const bodyH = 90 * scale * heightMod;
+  const bodyW = 46 * scale;
+  const headR = 16 * scale;
+
+  const feetY = sy - jumpOffset;
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(sx, sy+6, bodyW*0.55, 8, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // body
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillRect(sx - bodyW/2, feetY - bodyH, bodyW, bodyH);
+
+  // head
+  ctx.fillStyle = '#ffe0b3';
+  ctx.beginPath();
+  ctx.arc(sx, feetY - bodyH - headR + 4, headR, 0, Math.PI*2);
+  ctx.fill();
+
+  // cap
+  ctx.fillStyle = '#ff2fa0';
+  ctx.beginPath();
+  ctx.arc(sx, feetY - bodyH - headR*1.7 + 4, headR*0.95, Math.PI, 0);
+  ctx.fill();
+}
+
+/* ============ UI BUTTONS ============ */
+document.getElementById('startBtn').addEventListener('click', () => {
+  Audio1.resume();
+  Audio1.click();
+  startGame();
+  Audio1.startMusic();
+});
+document.getElementById('retryBtn').addEventListener('click', () => {
+  Audio1.click();
+  startGame();
+  Audio1.startMusic();
+});
+
+document.getElementById('pauseBtn').addEventListener('click', () => {
+  if(state === 'playing'){
+    Audio1.click();
+    Audio1.stopMusic();
+    state = 'paused';
+    document.getElementById('pauseScreen').style.display = 'flex';
+  }
+});
+document.getElementById('resumeBtn').addEventListener('click', () => {
+  if(state === 'paused'){
+    Audio1.click();
+    state = 'playing';
+    document.getElementById('pauseScreen').style.display = 'none';
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+    Audio1.startMusic();
+  }
+});
+
+document.getElementById('muteBtn').addEventListener('click', () => {
+  Audio1.resume();
+  const isMuted = Audio1.toggleMute();
+  document.getElementById('muteBtn').textContent = isMuted ? '🔇' : '🔊';
+});
+</script>
+
+</body>
+</html>

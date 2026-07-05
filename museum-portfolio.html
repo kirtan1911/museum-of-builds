@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kirtan Patel — The Museum of Builds</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall:#f7f4ee;
+    --wall-deep:#efe9dc;
+    --ink:#232323;
+    --brass:#a9824c;
+    --brass-dark:#7c5e35;
+    --line:#ddd3bd;
+    --sage:#5c6b56;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--wall);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    margin:0;
+  }
+  h1,h2,h3,.plaque-font{font-family:'Playfair Display',serif;}
+
+  /* NAV */
+  .nav-museum{
+    background:rgba(247,244,238,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    padding:1rem 2rem;
+    position:sticky;top:0;z-index:20;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .nav-museum .logo{font-family:'Playfair Display',serif;font-weight:700;font-size:1.3rem;letter-spacing:.5px;}
+  .nav-museum .logo span{color:var(--brass);}
+  .nav-links a{
+    color:var(--ink);text-decoration:none;font-size:.85rem;letter-spacing:1px;
+    text-transform:uppercase;margin-left:2rem;font-weight:600;
+    border-bottom:1px solid transparent;
+    transition:border-color .2s;
+  }
+  .nav-links a:hover{border-color:var(--brass);}
+
+  /* HERO */
+  .hero{
+    padding:6.5rem 2rem 5rem;
+    text-align:center;
+    position:relative;
+  }
+  .hero .eyebrow{
+    letter-spacing:4px;text-transform:uppercase;font-size:.78rem;color:var(--brass-dark);font-weight:600;
+  }
+  .hero h1{
+    font-size:3.4rem;font-weight:800;margin:.6rem 0 1rem;line-height:1.15;
+  }
+  .hero h1 em{font-style:italic;color:var(--brass);}
+  .hero p{
+    max-width:560px;margin:0 auto;color:#5c574c;font-size:1.05rem;line-height:1.7;
+  }
+  .hero-frame-line{
+    width:70px;height:2px;background:var(--brass);margin:1.8rem auto 0;
+  }
+
+  /* SECTION HEADERS */
+  .section-pad{padding:5rem 2rem;}
+  .section-eyebrow{
+    text-align:center;letter-spacing:3px;text-transform:uppercase;font-size:.75rem;
+    color:var(--brass-dark);font-weight:700;margin-bottom:.5rem;
+  }
+  .section-title{
+    text-align:center;font-size:2.1rem;font-weight:700;margin-bottom:.8rem;
+  }
+  .section-sub{
+    text-align:center;color:#6d6656;max-width:540px;margin:0 auto 3rem;font-size:.95rem;
+  }
+
+  /* ABOUT */
+  .about-wrap{
+    background:var(--wall-deep);
+  }
+  .about-frame{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:2.4rem;
+    box-shadow:0 10px 30px rgba(120,95,50,0.08);
+  }
+  .about-frame .role{
+    color:var(--brass-dark);font-weight:700;letter-spacing:1px;text-transform:uppercase;font-size:.78rem;
+  }
+  .about-skills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem;}
+  .about-skills span{
+    background:var(--wall);border:1px solid var(--line);border-radius:20px;
+    padding:.3rem .9rem;font-size:.8rem;color:var(--ink);
+  }
+
+  /* GALLERY (EXHIBITS) */
+  .exhibit-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
+    height:100%;
+    transition:transform .25s ease, box-shadow .25s ease;
+    display:flex;flex-direction:column;
+  }
+  .exhibit-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 18px 34px rgba(120,95,50,0.14);
+  }
+  .exhibit-frame{
+    height:170px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:3.2rem;
+    background:linear-gradient(135deg,var(--wall-deep),#fff);
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .exhibit-number{
+    position:absolute;top:.7rem;left:.9rem;
+    font-family:'Playfair Display',serif;font-weight:700;color:var(--brass);
+    font-size:.85rem;letter-spacing:1px;
+  }
+  .exhibit-body{padding:1.3rem 1.4rem 1.5rem;display:flex;flex-direction:column;flex-grow:1;}
+  .exhibit-body h3{font-size:1.15rem;margin-bottom:.4rem;}
+  .exhibit-tag{
+    display:inline-block;font-size:.7rem;letter-spacing:1px;text-transform:uppercase;
+    color:var(--sage);font-weight:700;margin-bottom:.6rem;
+  }
+  .exhibit-body p{font-size:.88rem;color:#5c574c;line-height:1.6;flex-grow:1;}
+  .exhibit-link{
+    margin-top:1rem;display:inline-flex;align-items:center;gap:.4rem;
+    color:var(--brass-dark);font-weight:700;font-size:.85rem;text-decoration:none;
+    border-bottom:1px solid var(--brass-dark);width:fit-content;
+  }
+  .exhibit-link:hover{color:var(--ink);border-color:var(--ink);}
+
+  /* CONTACT */
+  .contact-wrap{
+    background:var(--ink);
+    color:#f2ede2;
+    padding:4.5rem 2rem;
+    text-align:center;
+  }
+  .contact-wrap h2{color:#fff;}
+  .contact-wrap p{color:#c9c2b0;max-width:480px;margin:0 auto 1.6rem;}
+  .btn-brass{
+    background:var(--brass);border:1px solid var(--brass);color:#fff;font-weight:700;
+    padding:.7rem 1.8rem;border-radius:4px;letter-spacing:.5px;text-decoration:none;display:inline-block;
+  }
+  .btn-brass:hover{background:#c99a5c;color:#fff;}
+
+  footer{
+    background:var(--ink);color:#8a8371;text-align:center;padding:1.2rem;font-size:.78rem;
+    border-top:1px solid #333;
+  }
+
+  @media (max-width:576px){
+    .hero h1{font-size:2.3rem;}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav-museum">
+  <div class="logo">Kirtan<span>.</span></div>
+  <div class="nav-links d-none d-md-block">
+    <a href="#about">About</a>
+    <a href="#exhibits">Exhibits</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">A Curated Collection of Code</div>
+  <h1>Welcome To Our <em>Museum</em></h1>
+  <p>Every exhibit here began as an idea, then became a working piece of software — built line by line, tested, broken, and rebuilt. Step inside and explore what's on display.</p>
+  <div class="hero-frame-line"></div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-wrap" id="about">
+  <div class="container section-pad">
+    <div class="section-eyebrow">The Curator</div>
+    <h2 class="section-title">About Kirtan</h2>
+    <p class="section-sub">Full-stack developer &amp; B.Tech CEAI student, building real, working software — one project at a time.</p>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="about-frame">
+          <span class="role">Full-Stack Developer · B.Tech CEAI Student</span>
+          <p class="mt-3 mb-0" style="color:#4a453a;line-height:1.8;">
+            Kirtan is a Computer Engineering with AI student at UVPCE, Ganpat University, with a hands-on passion for building complete, working applications — from ASP.NET Core management systems to AI-assisted tools and browser games. Every project in this museum was designed, coded, debugged, and shipped end to end.
+          </p>
+          <div class="about-skills">
+            <span>ASP.NET Core</span>
+            <span>Entity Framework</span>
+            <span>SQL Server</span>
+            <span>JavaScript</span>
+            <span>Bootstrap</span>
+            <span>REST APIs</span>
+            <span>Gemini AI</span>
+            <span>Full-Stack Development</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXHIBITS / PROJECTS GALLERY -->
+<section class="section-pad" id="exhibits">
+  <div class="container">
+    <div class="section-eyebrow">On Display</div>
+    <h2 class="section-title">The Exhibits</h2>
+    <p class="section-sub">Six working pieces, six different problems solved. Click any exhibit to step inside.</p>
+
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">🧩<span class="exhibit-number">No. 01</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">AI Tool</span>
+            <h3>Code Solver</h3>
+            <p>An AI-powered code checker that reviews code in nine languages, explains what's wrong, fixes it, and runs it — all through your own Gemini API key.</p>
+            <a href="./code-solver.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">💬<span class="exhibit-number">No. 02</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">Utility</span>
+            <h3>Message Repeater</h3>
+            <p>A lightweight utility built for repeating and automating message flows — simple, fast, and dependable.</p>
+            <a href="./message-repeater.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">🎨<span class="exhibit-number">No. 03</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">Multiplayer Game</span>
+            <h3>Scribble Game</h3>
+            <p>A draw-and-guess party game where friends connect, sketch, and guess words together in real time.</p>
+            <a href="./scribble-game.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">🤖<span class="exhibit-number">No. 04</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">AI Tool</span>
+            <h3>Simple ChatBot</h3>
+            <p>A clean, conversational chatbot interface — a straightforward showcase of AI-driven conversation design.</p>
+            <a href="./Simple-ChatBot.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">🖼️<span class="exhibit-number">No. 05</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">Web Page</span>
+            <h3>Static WebPage</h3>
+            <p>A clean, dependable static page — built to demonstrate solid front-end fundamentals without a single framework dependency.</p>
+            <a href="./Statik-WebPage.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4">
+        <div class="exhibit-card">
+          <div class="exhibit-frame">🏃<span class="exhibit-number">No. 06</span></div>
+          <div class="exhibit-body">
+            <span class="exhibit-tag">Game</span>
+            <h3>Metro Dash</h3>
+            <p>A neon endless-runner — dodge trains, slide under bars, and chase the high score with a full synthesized sound engine.</p>
+            <a href="./metro-dash.html" class="exhibit-link">Step Inside →</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-wrap" id="contact">
+  <div class="section-eyebrow" style="color:#c99a5c;">Visit Again</div>
+  <h2 class="mb-2">Enjoyed the Museum?</h2>
+  <p>More exhibits are always under construction. Reach out to collaborate, hire, or just talk shop.</p>
+  <a href="mailto:hello@example.com" class="btn-brass">Get In Touch</a>
+</section>
+
+<footer>
+  © 2026 Kirtan Patel — The Museum of Builds. All exhibits handcrafted with code.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DoodleGuess — Draw &amp; Guess Together</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0f9b8e;
+    --teal-dark:#0b7268;
+    --coral:#ff6b5e;
+    --yellow:#ffc93c;
+    --bg:#f2f6f5;
+    --ink:#22303a;
+    --line:#dfe7e5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.brand,.section-title{font-family:'Baloo 2',cursive;}
+
+  .navbar-game{
+    background:var(--teal);
+  }
+  .navbar-game .brand{color:#fff;font-size:1.5rem;font-weight:800;}
+  .navbar-game .brand span{color:var(--yellow);}
+
+  .card-panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:0 4px 14px rgba(15,155,142,0.08);
+  }
+
+  .setup-wrap{max-width:520px;margin:3rem auto;}
+  .setup-wrap .card-panel{padding:2rem;}
+  .setup-wrap h1{color:var(--teal-dark);font-size:2rem;margin-bottom:.2rem;}
+  .setup-wrap p.lead-sub{color:#66787a;font-size:.95rem;}
+
+  label.form-label{font-weight:600;font-size:.85rem;color:var(--teal-dark);}
+  .form-select,.form-control{border:1px solid #cfe0dd;border-radius:8px;}
+  .form-select:focus,.form-control:focus{border-color:var(--teal);box-shadow:0 0 0 .2rem rgba(15,155,142,.15);}
+
+  .btn-teal{background:var(--teal);border:1px solid var(--teal);color:#fff;font-weight:700;border-radius:8px;}
+  .btn-teal:hover{background:var(--teal-dark);color:#fff;}
+  .btn-teal:disabled{opacity:.55;}
+  .btn-coral{background:var(--coral);border:1px solid var(--coral);color:#fff;font-weight:700;border-radius:8px;}
+  .btn-coral:hover{background:#e5564a;color:#fff;}
+
+  .key-status{font-size:.8rem;}
+  .key-status.ok{color:#1f8a4c;}
+  .key-status.bad{color:#c0392b;}
+
+  #gameScreen{display:none;}
+
+  .top-status-bar{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:.6rem 1.1rem;
+    display:flex;
+    align-items:center;
+    gap:1.2rem;
+    flex-wrap:wrap;
+  }
+  .status-chip{
+    background:var(--bg);
+    border-radius:20px;
+    padding:.3rem .9rem;
+    font-weight:700;
+    font-size:.9rem;
+  }
+  .word-display{
+    letter-spacing:4px;
+    font-family:'Baloo 2',cursive;
+    font-size:1.3rem;
+    color:var(--teal-dark);
+  }
+  #timerChip{color:var(--coral);}
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:.6rem;
+    flex-wrap:wrap;
+    padding:.6rem .8rem;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px 14px 0 0;
+    border-bottom:none;
+  }
+  .color-swatch{
+    width:26px;height:26px;border-radius:50%;border:2px solid #fff;
+    box-shadow:0 0 0 1px #cfd8d6;cursor:pointer;
+  }
+  .color-swatch.active{box-shadow:0 0 0 3px var(--teal);}
+
+  #drawCanvas{
+    background:#fff;
+    border:1px solid var(--line);
+    border-top:none;
+    border-radius:0 0 14px 14px;
+    width:100%;
+    height:460px;
+    touch-action:none;
+    cursor:crosshair;
+  }
+  #drawCanvas.locked{cursor:not-allowed;}
+
+  .player-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:.45rem .7rem;border-radius:8px;font-size:.9rem;
+  }
+  .player-item.current-drawer{background:#fff7e0;font-weight:700;}
+  .player-item .badge-score{background:var(--teal);color:#fff;border-radius:12px;padding:.15rem .6rem;font-size:.78rem;}
+
+  .chat-box{
+    height:260px;
+    overflow-y:auto;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:.6rem .7rem;
+    background:#fbfdfc;
+    font-size:.88rem;
+  }
+  .chat-msg{margin-bottom:.35rem;}
+  .chat-msg .name{font-weight:700;color:var(--teal-dark);}
+  .chat-msg.correct{color:#1f8a4c;font-weight:700;}
+  .chat-msg.system{color:#8a8371;font-style:italic;}
+
+  .room-code-pill{
+    background:var(--yellow);
+    color:#3a2c00;
+    font-weight:800;
+    border-radius:8px;
+    padding:.25rem .8rem;
+    letter-spacing:1px;
+  }
+
+  .footer-note{font-size:.78rem;color:#8a8371;}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-game px-3 py-2">
+  <span class="brand">Doodle<span>Guess</span></span>
+</nav>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen" class="container">
+  <div class="setup-wrap">
+    <div class="card-panel">
+      <h1>🎨 DoodleGuess</h1>
+      <p class="lead-sub mb-4">Draw. Guess. Have fun with friends — right in the browser.</p>
+
+      <div class="mb-3">
+        <label class="form-label">Your Name</label>
+        <input type="text" id="playerNameInput" class="form-control" placeholder="e.g. Kirtan" maxlength="16">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Room Code</label>
+        <div class="input-group">
+          <input type="text" id="roomCodeInput" class="form-control" placeholder="e.g. FRIENDS1" maxlength="12">
+          <button class="btn btn-outline-secondary" id="randomRoomBtn" type="button">🎲 Random</button>
+        </div>
+        <div class="form-text">Share this exact code with friends so they join the same room.</div>
+      </div>
+
+      <hr>
+
+      <div class="mb-3">
+        <label class="form-label">AI Model (used to generate words to draw)</label>
+        <select id="modelSelect" class="form-select">
+          <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+          <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">API Key</label>
+        <div class="input-group">
+          <input type="password" id="apiKeyInput" class="form-control" placeholder="Paste your Gemini API key">
+          <button class="btn btn-outline-secondary" type="button" id="toggleKeyBtn">👁</button>
+        </div>
+      </div>
+      <div id="keyStatus" class="key-status mb-3">Key not verified yet.</div>
+      <button class="btn btn-teal w-100 mb-2" id="verifyKeyBtn">Verify Key</button>
+
+      <button class="btn btn-coral w-100" id="joinRoomBtn" disabled>Join Room ▶</button>
+
+      <p class="footer-note mt-3 mb-0">
+        This is a fully static page — no backend server. Players sync through Claude's shared artifact storage, so this works when everyone opens the same shared DoodleGuess artifact link. Your API key stays in your own browser only.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="container-fluid py-3 px-3 px-md-4">
+
+  <div class="top-status-bar mb-3">
+    <span class="room-code-pill" id="roomCodeChip">ROOM</span>
+    <span class="status-chip">Round <span id="roundNumChip">1</span></span>
+    <span class="status-chip" id="timerChip">⏱ --s</span>
+    <span class="status-chip word-display" id="wordChip">— — — —</span>
+    <button class="btn btn-sm btn-teal ms-auto" id="getWordBtn">🎲 New Word (AI)</button>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- LEFT: PLAYERS -->
+    <div class="col-lg-3 order-2 order-lg-1">
+      <div class="card-panel p-3 mb-3">
+        <h3 class="section-title fs-6 mb-2">Players</h3>
+        <div id="playerList"></div>
+      </div>
+      <div class="card-panel p-3">
+        <div class="d-grid">
+          <button class="btn btn-outline-secondary btn-sm" id="leaveRoomBtn">⟵ Leave Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: CANVAS -->
+    <div class="col-lg-6 order-1 order-lg-2">
+      <div class="toolbar">
+        <span class="color-swatch active" style="background:#22303a" data-color="#22303a"></span>
+        <span class="color-swatch" style="background:#ff6b5e" data-color="#ff6b5e"></span>
+        <span class="color-swatch" style="background:#0f9b8e" data-color="#0f9b8e"></span>
+        <span class="color-swatch" style="background:#ffc93c" data-color="#ffc93c"></span>
+        <span class="color-swatch" style="background:#3a6df0" data-color="#3a6df0"></span>
+        <span class="color-swatch" style="background:#ffffff;box-shadow:0 0 0 1px #999" data-color="#ffffff"></span>
+        <input type="range" id="brushSize" min="2" max="24" value="5" style="width:100px;">
+        <button class="btn btn-sm btn-outline-secondary" id="clearCanvasBtn">🧹 Clear</button>
+        <span class="ms-auto small text-muted" id="drawHint">Waiting for your turn...</span>
+      </div>
+      <canvas id="drawCanvas"></canvas>
+    </div>
+
+    <!-- RIGHT: CHAT -->
+    <div class="col-lg-3 order-3">
+      <div class="card-panel p-3">
+        <h3 class="section-title fs-6 mb-2">Guess the Word</h3>
+        <div id="chatBox" class="chat-box mb-2"></div>
+        <div class="input-group">
+          <input type="text" id="chatInput" class="form-control" placeholder="Type your guess...">
+          <button class="btn btn-teal" id="sendGuessBtn">Send</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------------- STATE ---------------- */
+let myId = null;
+let myName = '';
+let roomCode = '';
+let verifiedKey = null;
+let selectedModel = 'gemini-2.5-flash';
+let currentColor = '#22303a';
+let isDrawing = false;
+let lastPoint = null;
+let localStrokeBuffer = [];
+let knownStrokeCount = 0;
+let pollTimer = null;
+let flushTimer = null;
+let countdownTimer = null;
+
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+}
+window.addEventListener('resize', () => { resizeCanvas(); redrawAll(); });
+
+/* ---------------- SETUP SCREEN ---------------- */
+const playerNameInput = document.getElementById('playerNameInput');
+const roomCodeInput = document.getElementById('roomCodeInput');
+const randomRoomBtn = document.getElementById('randomRoomBtn');
+const modelSelect = document.getElementById('modelSelect');
+const apiKeyInput = document.getElementById('apiKeyInput');
+const toggleKeyBtn = document.getElementById('toggleKeyBtn');
+const keyStatus = document.getElementById('keyStatus');
+const verifyKeyBtn = document.getElementById('verifyKeyBtn');
+const joinRoomBtn = document.getElementById('joinRoomBtn');
+
+toggleKeyBtn.addEventListener('click', () => {
+  apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+});
+
+randomRoomBtn.addEventListener('click', () => {
+  roomCodeInput.value = 'ROOM' + Math.floor(1000 + Math.random() * 9000);
+});
+
+function buildEndpoint(model, key){
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+}
+
+async function callGemini(model, key, promptText){
+  const res = await fetch(buildEndpoint(model, key), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: { temperature: 0.9 }
+    })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    throw new Error(data?.error?.message || `Request failed with status ${res.status}`);
+  }
+  const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  if(!text) throw new Error('Empty response from model.');
+  return text;
+}
+
+verifyKeyBtn.addEventListener('click', async () => {
+  const key = apiKeyInput.value.trim();
+  if(!key){
+    keyStatus.textContent = 'Please enter an API key first.';
+    keyStatus.className = 'key-status bad mb-3';
+    return;
+  }
+  verifyKeyBtn.disabled = true;
+  keyStatus.textContent = 'Verifying...';
+  keyStatus.className = 'key-status mb-3';
+  try{
+    await callGemini(modelSelect.value, key, 'Reply with exactly one word: OK');
+    verifiedKey = key;
+    selectedModel = modelSelect.value;
+    keyStatus.textContent = '✔ Key verified.';
+    keyStatus.className = 'key-status ok mb-3';
+    updateJoinButton();
+  }catch(err){
+    verifiedKey = null;
+    keyStatus.textContent = '✖ ' + err.message;
+    keyStatus.className = 'key-status bad mb-3';
+    updateJoinButton();
+  }finally{
+    verifyKeyBtn.disabled = false;
+  }
+});
+
+function updateJoinButton(){
+  joinRoomBtn.disabled = !(verifiedKey && playerNameInput.value.trim() && roomCodeInput.value.trim());
+}
+playerNameInput.addEventListener('input', updateJoinButton);
+roomCodeInput.addEventListener('input', updateJoinButton);
+
+/* ---------------- STORAGE HELPERS ---------------- */
+function storageKey(){
+  return 'doodleguess:' + roomCode.trim().toUpperCase();
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(storageKey(), true);
+    return res ? JSON.parse(res.value) : null;
+  }catch(e){
+    return null;
+  }
+}
+
+async function saveState(state){
+  try{
+    await window.storage.set(storageKey(), JSON.stringify(state), true);
+  }catch(e){
+    console.error('Storage save failed', e);
+  }
+}
+
+function freshState(){
+  return {
+    players: [],
+    order: [],
+    turnIndex: 0,
+    currentWord: '',
+    roundActive: false,
+    roundEndsAt: 0,
+    roundNumber: 0,
+    strokes: [],
+    clearCount: 0,
+    guessedCorrectIds: [],
+    chat: []
+  };
+}
+
+/* ---------------- JOIN ROOM ---------------- */
+joinRoomBtn.addEventListener('click', async () => {
+  myName = playerNameInput.value.trim();
+  roomCode = roomCodeInput.value.trim().toUpperCase();
+  myId = 'p_' + Math.random().toString(36).slice(2, 10);
+
+  let state = await loadState();
+  if(!state) state = freshState();
+
+  const already = state.players.find(p => p.name.toLowerCase() === myName.toLowerCase());
+  if(already){
+    myId = already.id;
+  }else{
+    state.players.push({ id: myId, name: myName, score: 0 });
+    state.order.push(myId);
+  }
+  await saveState(state);
+
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  document.getElementById('roomCodeChip').textContent = roomCode;
+
+  resizeCanvas();
+  startPolling();
+});
+
+document.getElementById('leaveRoomBtn').addEventListener('click', () => {
+  clearInterval(pollTimer);
+  clearInterval(countdownTimer);
+  clearInterval(flushTimer);
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'block';
+});
+
+/* ---------------- POLLING / SYNC ---------------- */
+function startPolling(){
+  pollAndRender();
+  pollTimer = setInterval(pollAndRender, 1200);
+  countdownTimer = setInterval(updateTimerDisplay, 1000);
+  flushTimer = setInterval(flushStrokes, 500);
+}
+
+let latestState = null;
+
+async function pollAndRender(){
+  const state = await loadState();
+  if(!state) return;
+  latestState = state;
+
+  renderPlayers(state);
+  renderChat(state);
+  renderWordAndControls(state);
+
+  if(state.clearCount !== window.__lastClearCount){
+    window.__lastClearCount = state.clearCount;
+    knownStrokeCount = 0;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+
+  if(state.strokes.length > knownStrokeCount){
+    const newOnes = state.strokes.slice(knownStrokeCount);
+    newOnes.forEach(drawStrokeSegment);
+    knownStrokeCount = state.strokes.length;
+  }
+}
+
+function redrawAll(){
+  if(!latestState) return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  latestState.strokes.forEach(drawStrokeSegment);
+  knownStrokeCount = latestState.strokes.length;
+}
+
+function isMyTurn(state){
+  if(!state.order.length) return false;
+  const drawerId = state.order[state.turnIndex % state.order.length];
+  return drawerId === myId;
+}
+
+function renderPlayers(state){
+  const drawerId = state.order.length ? state.order[state.turnIndex % state.order.length] : null;
+  const list = document.getElementById('playerList');
+  list.innerHTML = '';
+  state.players.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'player-item' + (p.id === drawerId ? ' current-drawer' : '');
+    div.innerHTML = `<span>${p.id === drawerId ? '✏️ ' : ''}${escapeHtml(p.name)}${p.id === myId ? ' (you)' : ''}</span><span class="badge-score">${p.score}</span>`;
+    list.appendChild(div);
+  });
+}
+
+function renderChat(state){
+  const box = document.getElementById('chatBox');
+  box.innerHTML = '';
+  state.chat.slice(-60).forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (m.type === 'correct' ? ' correct' : m.type === 'system' ? ' system' : '');
+    if(m.type === 'system'){
+      div.textContent = m.text;
+    }else{
+      div.innerHTML = `<span class="name">${escapeHtml(m.name)}:</span> ${escapeHtml(m.text)}`;
+    }
+    box.appendChild(div);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderWordAndControls(state){
+  document.getElementById('roundNumChip').textContent = state.roundNumber || 0;
+
+  const drawing = isMyTurn(state);
+  canvas.classList.toggle('locked', !drawing);
+  document.getElementById('drawHint').textContent = drawing
+    ? (state.roundActive ? 'Your turn — draw the word!' : 'Your turn — click "New Word (AI)" to start!')
+    : (state.roundActive ? 'Guess the word in the chat!' : 'Waiting for the drawer to start...');
+
+  document.getElementById('getWordBtn').style.display = drawing ? 'inline-block' : 'none';
+  document.getElementById('clearCanvasBtn').disabled = !drawing;
+
+  const wordChip = document.getElementById('wordChip');
+  if(drawing && state.currentWord){
+    wordChip.textContent = state.currentWord.toUpperCase();
+  }else if(state.currentWord){
+    wordChip.textContent = state.currentWord.replace(/[a-zA-Z]/g, '_ ');
+  }else{
+    wordChip.textContent = '— — — —';
+  }
+}
+
+function updateTimerDisplay(){
+  if(!latestState || !latestState.roundActive){
+    document.getElementById('timerChip').textContent = '⏱ --s';
+    return;
+  }
+  const remaining = Math.max(0, Math.round((latestState.roundEndsAt - Date.now()) / 1000));
+  document.getElementById('timerChip').textContent = `⏱ ${remaining}s`;
+
+  if(remaining <= 0 && isMyTurn(latestState)){
+    endRound();
+  }
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ---------------- DRAWING ---------------- */
+document.querySelectorAll('.color-swatch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    sw.classList.add('active');
+    currentColor = sw.dataset.color;
+  });
+});
+
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+function canDraw(){
+  return latestState && isMyTurn(latestState) && latestState.roundActive;
+}
+
+function drawStrokeSegment(seg){
+  ctx.strokeStyle = seg.color;
+  ctx.lineWidth = seg.size;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(seg.x0, seg.y0);
+  ctx.lineTo(seg.x1, seg.y1);
+  ctx.stroke();
+}
+
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', moveDraw);
+canvas.addEventListener('mouseup', stopDraw);
+canvas.addEventListener('mouseleave', stopDraw);
+canvas.addEventListener('touchstart', startDraw);
+canvas.addEventListener('touchmove', moveDraw);
+canvas.addEventListener('touchend', stopDraw);
+
+function startDraw(e){
+  if(!canDraw()) return;
+  isDrawing = true;
+  lastPoint = getPos(e);
+}
+function moveDraw(e){
+  if(!isDrawing || !canDraw()) return;
+  e.preventDefault();
+  const p = getPos(e);
+  const seg = { x0: lastPoint.x, y0: lastPoint.y, x1: p.x, y1: p.y, color: currentColor, size: Number(document.getElementById('brushSize').value) };
+  drawStrokeSegment(seg);
+  localStrokeBuffer.push(seg);
+  knownStrokeCount++;
+  lastPoint = p;
+}
+function stopDraw(){ isDrawing = false; }
+
+async function flushStrokes(){
+  if(!localStrokeBuffer.length) return;
+  const toSend = localStrokeBuffer.splice(0, localStrokeBuffer.length);
+  const state = await loadState();
+  if(!state) return;
+  state.strokes = state.strokes.concat(toSend);
+  await saveState(state);
+}
+
+document.getElementById('clearCanvasBtn').addEventListener('click', async () => {
+  if(!canDraw()) return;
+  const state = await loadState();
+  if(!state) return;
+  state.strokes = [];
+  state.clearCount = (state.clearCount || 0) + 1;
+  await saveState(state);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  knownStrokeCount = 0;
+});
+
+/* ---------------- WORD GENERATION (AI) ---------------- */
+document.getElementById('getWordBtn').addEventListener('click', async () => {
+  if(!verifiedKey) return;
+  const btn = document.getElementById('getWordBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Thinking...';
+  try{
+    const raw = await callGemini(selectedModel, verifiedKey,
+      'Give me exactly ONE simple, common, drawable English noun (like "dog", "pizza", "umbrella") for a Pictionary-style drawing game. Reply with ONLY the single word, lowercase, no punctuation, no explanation.'
+    );
+    const word = raw.trim().split(/\s+/)[0].replace(/[^a-zA-Z]/g, '').toLowerCase();
+
+    const state = await loadState();
+    if(!state) return;
+    state.currentWord = word;
+    state.roundActive = true;
+    state.roundNumber = (state.roundNumber || 0) + 1;
+    state.roundEndsAt = Date.now() + 60000;
+    state.strokes = [];
+    state.clearCount = (state.clearCount || 0) + 1;
+    state.guessedCorrectIds = [];
+    state.chat.push({ type: 'system', text: `Round ${state.roundNumber} started! The drawer is picking up the pen...` });
+    await saveState(state);
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    knownStrokeCount = 0;
+  }catch(err){
+    alert('Could not fetch a word: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '🎲 New Word (AI)';
+  }
+});
+
+async function endRound(){
+  const state = await loadState();
+  if(!state || !state.roundActive) return;
+  state.chat.push({ type: 'system', text: `Time's up! The word was "${state.currentWord}".` });
+  state.roundActive = false;
+  state.currentWord = '';
+  state.turnIndex = (state.turnIndex + 1) % Math.max(1, state.order.length);
+  await saveState(state);
+}
+
+/* ---------------- CHAT / GUESSING ---------------- */
+document.getElementById('sendGuessBtn').addEventListener('click', submitGuess);
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') submitGuess();
+});
+
+async function submitGuess(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  const state = await loadState();
+  if(!state) return;
+
+  const amDrawer = state.order.length && state.order[state.turnIndex % state.order.length] === myId;
+  const alreadyGuessed = (state.guessedCorrectIds || []).includes(myId);
+
+  if(!amDrawer && state.roundActive && !alreadyGuessed &&
+     text.toLowerCase() === (state.currentWord || '').toLowerCase()){
+    state.guessedCorrectIds = state.guessedCorrectIds || [];
+    state.guessedCorrectIds.push(myId);
+    const remainingSec = Math.max(5, Math.round((state.roundEndsAt - Date.now()) / 1000));
+    const points = 50 + remainingSec * 2;
+    const me = state.players.find(p => p.id === myId);
+    if(me) me.score += points;
+    const drawerId = state.order[state.turnIndex % state.order.length];
+    const drawer = state.players.find(p => p.id === drawerId);
+    if(drawer) drawer.score += 10;
+    state.chat.push({ type: 'correct', text: `${myName} guessed the word correctly! (+${points})` });
+  }else{
+    state.chat.push({ type: 'normal', name: myName, text });
+  }
+  await saveState(state);
+}
+</script>
+
+</body>
+</html>

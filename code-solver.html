@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeCheck — AI Code Solving System</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1b2a4a;
+    --navy-light:#2c4270;
+    --gold:#b8863f;
+    --paper:#faf8f4;
+    --ink:#232323;
+    --line:#dcd4c4;
+    --ok:#2e7d32;
+    --bad:#b3261e;
+  }
+  *{box-sizing:border-box;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  h1,h2,h3,.brand{font-family:'Merriweather',serif;}
+  code, textarea.code-area, pre, .mono{font-family:'Source Code Pro',monospace;}
+
+  .navbar-classic{
+    background:var(--navy);
+    border-bottom:4px solid var(--gold);
+  }
+  .navbar-classic .brand{
+    color:#fff;
+    font-size:1.4rem;
+    font-weight:900;
+    letter-spacing:.5px;
+  }
+  .navbar-classic .brand span{color:var(--gold);}
+
+  .panel{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow:0 2px 6px rgba(27,42,74,0.06);
+  }
+  .panel-header{
+    background:var(--navy);
+    color:#fff;
+    padding:.65rem 1rem;
+    border-radius:6px 6px 0 0;
+    font-weight:600;
+    letter-spacing:.3px;
+    font-size:.95rem;
+    text-transform:uppercase;
+  }
+  .panel-body{padding:1.1rem;}
+
+  label.form-label{font-weight:600;font-size:.85rem;color:var(--navy);}
+
+  .form-select, .form-control{
+    border:1px solid #c9c2b0;
+    border-radius:4px;
+  }
+  .form-select:focus, .form-control:focus{
+    border-color:var(--navy);
+    box-shadow:0 0 0 .2rem rgba(27,42,74,.15);
+  }
+
+  textarea.code-area{
+    width:100%;
+    min-height:340px;
+    background:#1e1e1e;
+    color:#e8e8e8;
+    border:1px solid #333;
+    border-radius:4px;
+    padding:.9rem;
+    font-size:.92rem;
+    line-height:1.5;
+    resize:vertical;
+  }
+  textarea.code-area:focus{outline:none;border-color:var(--gold);}
+
+  .btn-classic{
+    background:var(--navy);
+    color:#fff;
+    border:1px solid var(--navy);
+    font-weight:600;
+    letter-spacing:.3px;
+    padding:.55rem 1.4rem;
+    border-radius:4px;
+  }
+  .btn-classic:hover{background:var(--navy-light);color:#fff;}
+  .btn-classic:disabled{opacity:.6;}
+
+  .key-status{font-size:.8rem;}
+  .key-status.ok{color:var(--ok);}
+  .key-status.bad{color:var(--bad);}
+
+  .result-box{
+    border-radius:6px;
+    padding:1.1rem 1.2rem;
+    border:1px solid var(--line);
+    background:#fff;
+    display:none;
+  }
+  .result-box.show{display:block;}
+  .result-box.correct{border-left:6px solid var(--ok);}
+  .result-box.incorrect{border-left:6px solid var(--bad);}
+
+  .result-title{font-family:'Merriweather',serif;font-weight:900;font-size:1.15rem;}
+  .result-title.correct{color:var(--ok);}
+  .result-title.incorrect{color:var(--bad);}
+
+  pre.output-block{
+    background:#1e1e1e;
+    color:#d7f7d7;
+    border-radius:4px;
+    padding:.9rem;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-size:.87rem;
+    margin-bottom:0;
+  }
+  pre.fixed-code-block{
+    background:#1e1e1e;
+    color:#ffe9b3;
+    border-radius:4px;
+    padding:.9rem;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-size:.87rem;
+    margin-bottom:0;
+  }
+
+  .divider-label{
+    text-align:center;
+    color:#8a8371;
+    font-size:.75rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin:1rem 0 .4rem;
+  }
+  .footer-note{font-size:.78rem;color:#8a8371;}
+
+  .spinner-border-sm-custom{width:1rem;height:1rem;}
+
+  .mode-tabs{
+    display:flex;
+    border-bottom:1px solid var(--line);
+    background:#fff;
+    border-radius:6px 6px 0 0;
+    overflow:hidden;
+  }
+  .mode-tab{
+    flex:1;
+    text-align:center;
+    padding:.7rem 1rem;
+    font-weight:600;
+    font-size:.9rem;
+    letter-spacing:.2px;
+    color:var(--navy);
+    background:#efe9dd;
+    cursor:pointer;
+    border:none;
+    border-right:1px solid var(--line);
+  }
+  .mode-tab:last-child{border-right:none;}
+  .mode-tab.active{
+    background:var(--navy);
+    color:#fff;
+  }
+  .mode-section{display:none;}
+  .mode-section.active{display:block;}
+
+  textarea.question-area{
+    width:100%;
+    min-height:110px;
+    border:1px solid #c9c2b0;
+    border-radius:4px;
+    padding:.8rem;
+    font-size:.95rem;
+    resize:vertical;
+  }
+  textarea.question-area:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 .2rem rgba(27,42,74,.15);}
+
+  pre.answer-code-block{
+    background:#1e1e1e;
+    color:#d7f7d7;
+    border-radius:4px;
+    padding:.9rem;
+    white-space:pre-wrap;
+    word-break:break-word;
+    font-size:.87rem;
+    margin-bottom:0;
+  }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-classic px-3 py-2">
+  <span class="brand">Code<span>Check</span></span>
+  <span class="text-white-50 small ms-auto d-none d-md-inline">AI-Assisted Code Review &amp; Execution</span>
+</nav>
+
+<div class="container-fluid py-4 px-3 px-md-4">
+  <div class="row g-4">
+
+    <!-- LEFT: SETTINGS -->
+    <div class="col-lg-3">
+      <div class="panel mb-4">
+        <div class="panel-header">Connect Your AI</div>
+        <div class="panel-body">
+
+          <div class="mb-3">
+            <label class="form-label">Model</label>
+            <select id="modelSelect" class="form-select">
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">API Key</label>
+            <div class="input-group">
+              <input type="password" id="apiKeyInput" class="form-control" placeholder="Paste your Gemini API key">
+              <button class="btn btn-outline-secondary" type="button" id="toggleKeyBtn">👁</button>
+            </div>
+          </div>
+          <div id="keyStatus" class="key-status mb-2">Key not verified yet.</div>
+
+          <button class="btn btn-classic w-100" id="verifyKeyBtn">Verify Key</button>
+
+          <div class="divider-label">Language</div>
+          <select id="langSelect" class="form-select">
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="python" selected>Python</option>
+            <option value="java">Java</option>
+            <option value="csharp">C#</option>
+            <option value="rust">Rust</option>
+            <option value="r">R</option>
+            <option value="php">PHP</option>
+            <option value="sql">SQL</option>
+          </select>
+
+          <p class="footer-note mt-3 mb-0">
+            Your API key is only used in your browser to call Google's Gemini API directly. It is never stored or sent anywhere else.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: EDITOR + RESULT -->
+    <div class="col-lg-9">
+
+      <div class="mode-tabs mb-0">
+        <button type="button" class="mode-tab active" id="tabCheckBtn">Check My Code</button>
+        <button type="button" class="mode-tab" id="tabAskBtn">Ask for Code</button>
+      </div>
+
+      <!-- MODE 1: CHECK & RUN CODE -->
+      <div id="checkModeSection" class="mode-section active">
+        <div class="panel mb-4" style="border-top:none;border-radius:0 0 6px 6px;">
+          <div class="panel-header d-flex justify-content-between align-items-center">
+            <span>Write Your Code</span>
+            <span id="langBadge" class="badge text-bg-light text-dark">python</span>
+          </div>
+          <div class="panel-body">
+            <textarea id="codeArea" class="code-area" spellcheck="false" placeholder="// Write your code here...">print("Hello, World!")</textarea>
+
+            <div class="d-flex align-items-center gap-2 mt-3">
+              <button class="btn btn-classic" id="checkRunBtn" disabled>Check &amp; Run Code</button>
+              <span id="loadingSpinner" class="spinner-border spinner-border-sm-custom text-secondary d-none" role="status"></span>
+              <span id="statusText" class="text-muted small"></span>
+            </div>
+            <div class="form-text mt-1">
+              The "Check &amp; Run" button unlocks once your API key is verified.
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULT: CORRECT -->
+        <div id="resultCorrect" class="result-box correct">
+          <div class="result-title correct mb-2">🎉 Congratulations! Your code is correct.</div>
+          <p class="mb-2 fw-semibold">Program Output:</p>
+          <pre id="outputBlock" class="output-block"></pre>
+        </div>
+
+        <!-- RESULT: INCORRECT -->
+        <div id="resultIncorrect" class="result-box incorrect mt-3">
+          <div class="result-title incorrect mb-2">⚠ There's a problem with your code.</div>
+          <p class="mb-1 fw-semibold">What's wrong:</p>
+          <p id="errorExplanation" class="mb-3"></p>
+          <p class="mb-1 fw-semibold">Corrected code:</p>
+          <pre id="fixedCodeBlock" class="fixed-code-block"></pre>
+        </div>
+
+        <!-- RESULT: ERROR (API/network) -->
+        <div id="resultApiError" class="result-box incorrect mt-3">
+          <div class="result-title incorrect mb-2">⚠ Request Failed</div>
+          <p id="apiErrorText" class="mb-0"></p>
+        </div>
+      </div>
+
+      <!-- MODE 2: ASK FOR CODE -->
+      <div id="askModeSection" class="mode-section">
+        <div class="panel mb-4" style="border-top:none;border-radius:0 0 6px 6px;">
+          <div class="panel-header d-flex justify-content-between align-items-center">
+            <span>Ask a Code-Related Question</span>
+            <span id="langBadgeAsk" class="badge text-bg-light text-dark">python</span>
+          </div>
+          <div class="panel-body">
+            <label class="form-label">Your Question</label>
+            <textarea id="questionArea" class="question-area" placeholder="e.g. How do I reverse a string? / Write a program to check prime numbers / Sort an array using bubble sort"></textarea>
+
+            <div class="d-flex align-items-center gap-2 mt-3">
+              <button class="btn btn-classic" id="getCodeBtn" disabled>Get Code</button>
+              <span id="askLoadingSpinner" class="spinner-border spinner-border-sm-custom text-secondary d-none" role="status"></span>
+              <span id="askStatusText" class="text-muted small"></span>
+            </div>
+            <div class="form-text mt-1">
+              Code will be generated in the language selected on the left (<span id="askLangHint">Python</span>). Change the language dropdown to switch.
+            </div>
+          </div>
+        </div>
+
+        <!-- RESULT: ASK ANSWER -->
+        <div id="resultAskAnswer" class="result-box correct">
+          <div class="result-title correct mb-2">✅ Here's your code</div>
+          <p id="askExplanation" class="mb-3"></p>
+          <pre id="askCodeBlock" class="answer-code-block"></pre>
+        </div>
+
+        <!-- RESULT: ASK ERROR -->
+        <div id="resultAskError" class="result-box incorrect mt-3">
+          <div class="result-title incorrect mb-2">⚠ Request Failed</div>
+          <p id="askErrorText" class="mb-0"></p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+let verifiedKey = null;
+
+const apiKeyInput   = document.getElementById('apiKeyInput');
+const toggleKeyBtn   = document.getElementById('toggleKeyBtn');
+const verifyKeyBtn   = document.getElementById('verifyKeyBtn');
+const keyStatus      = document.getElementById('keyStatus');
+const modelSelect    = document.getElementById('modelSelect');
+const langSelect     = document.getElementById('langSelect');
+const langBadge      = document.getElementById('langBadge');
+const codeArea       = document.getElementById('codeArea');
+const checkRunBtn    = document.getElementById('checkRunBtn');
+const loadingSpinner = document.getElementById('loadingSpinner');
+const statusText     = document.getElementById('statusText');
+
+const resultCorrect    = document.getElementById('resultCorrect');
+const resultIncorrect  = document.getElementById('resultIncorrect');
+const resultApiError   = document.getElementById('resultApiError');
+const outputBlock      = document.getElementById('outputBlock');
+const errorExplanation = document.getElementById('errorExplanation');
+const fixedCodeBlock   = document.getElementById('fixedCodeBlock');
+
+toggleKeyBtn.addEventListener('click', () => {
+  apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+});
+
+const langBadgeAsk   = document.getElementById('langBadgeAsk');
+const askLangHint    = document.getElementById('askLangHint');
+const questionArea   = document.getElementById('questionArea');
+const getCodeBtn     = document.getElementById('getCodeBtn');
+const askLoadingSpinner = document.getElementById('askLoadingSpinner');
+const askStatusText  = document.getElementById('askStatusText');
+const resultAskAnswer = document.getElementById('resultAskAnswer');
+const resultAskError  = document.getElementById('resultAskError');
+const askExplanation  = document.getElementById('askExplanation');
+const askCodeBlock    = document.getElementById('askCodeBlock');
+const askErrorText    = document.getElementById('askErrorText');
+
+const tabCheckBtn = document.getElementById('tabCheckBtn');
+const tabAskBtn   = document.getElementById('tabAskBtn');
+const checkModeSection = document.getElementById('checkModeSection');
+const askModeSection   = document.getElementById('askModeSection');
+
+const langNames = {
+  c: 'C', cpp: 'C++', python: 'Python', java: 'Java',
+  csharp: 'C#', rust: 'Rust', r: 'R', php: 'PHP', sql: 'SQL'
+};
+
+tabCheckBtn.addEventListener('click', () => {
+  tabCheckBtn.classList.add('active');
+  tabAskBtn.classList.remove('active');
+  checkModeSection.classList.add('active');
+  askModeSection.classList.remove('active');
+});
+
+tabAskBtn.addEventListener('click', () => {
+  tabAskBtn.classList.add('active');
+  tabCheckBtn.classList.remove('active');
+  askModeSection.classList.add('active');
+  checkModeSection.classList.remove('active');
+});
+
+langSelect.addEventListener('change', () => {
+  langBadge.textContent = langSelect.value;
+  langBadgeAsk.textContent = langSelect.value;
+  askLangHint.textContent = langNames[langSelect.value] || langSelect.value;
+});
+
+function hideAllResults(){
+  resultCorrect.classList.remove('show');
+  resultIncorrect.classList.remove('show');
+  resultApiError.classList.remove('show');
+}
+
+function buildEndpoint(model, key){
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+}
+
+async function callGemini(model, key, promptText){
+  const res = await fetch(buildEndpoint(model, key), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: { temperature: 0.2 }
+    })
+  });
+
+  const data = await res.json();
+
+  if(!res.ok){
+    const msg = data?.error?.message || `Request failed with status ${res.status}`;
+    throw new Error(msg);
+  }
+
+  const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+  if(!text){
+    throw new Error('The model returned an empty response.');
+  }
+  return text;
+}
+
+function extractJson(rawText){
+  let cleaned = rawText.trim();
+  cleaned = cleaned.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if(firstBrace === -1 || lastBrace === -1){
+    throw new Error('Could not find valid JSON in the model response.');
+  }
+  const jsonSlice = cleaned.slice(firstBrace, lastBrace + 1);
+  return JSON.parse(jsonSlice);
+}
+
+verifyKeyBtn.addEventListener('click', async () => {
+  const key = apiKeyInput.value.trim();
+  if(!key){
+    keyStatus.textContent = 'Please enter an API key first.';
+    keyStatus.className = 'key-status bad mb-2';
+    return;
+  }
+
+  verifyKeyBtn.disabled = true;
+  keyStatus.textContent = 'Verifying...';
+  keyStatus.className = 'key-status mb-2';
+
+  try{
+    await callGemini(modelSelect.value, key, 'Reply with exactly one word: OK');
+    verifiedKey = key;
+    keyStatus.textContent = '✔ Key verified. You can now check and run code.';
+    keyStatus.className = 'key-status ok mb-2';
+    checkRunBtn.disabled = false;
+    getCodeBtn.disabled = false;
+  }catch(err){
+    verifiedKey = null;
+    checkRunBtn.disabled = true;
+    getCodeBtn.disabled = true;
+    keyStatus.textContent = '✖ Invalid key or request failed: ' + err.message;
+    keyStatus.className = 'key-status bad mb-2';
+  }finally{
+    verifyKeyBtn.disabled = false;
+  }
+});
+
+checkRunBtn.addEventListener('click', async () => {
+  if(!verifiedKey){
+    return;
+  }
+  const code = codeArea.value;
+  const language = langSelect.value;
+
+  if(!code.trim()){
+    statusText.textContent = 'Please write some code first.';
+    return;
+  }
+
+  hideAllResults();
+  checkRunBtn.disabled = true;
+  loadingSpinner.classList.remove('d-none');
+  statusText.textContent = 'Analyzing your code...';
+
+  const prompt = `You are a strict but helpful code reviewer and interpreter for the ${language} programming language.
+
+Given the code below, do the following:
+1. Carefully check if it is syntactically valid and would run correctly, and whether it does something reasonable (no leftover placeholders, no obvious logic errors).
+2. If there is any error (syntax error, compile error, runtime error, or clear logic bug), mark it as incorrect.
+3. If it is correct, mentally execute it and produce the exact expected console/standard output.
+
+Respond with ONLY a raw JSON object (no markdown fences, no extra text) in exactly this shape:
+
+{
+  "status": "correct" or "incorrect",
+  "output": "the exact program output if status is correct, else empty string",
+  "error_explanation": "if incorrect, a clear, beginner-friendly explanation of what is wrong and why, else empty string",
+  "fixed_code": "if incorrect, the corrected full code, else empty string"
+}
+
+Code (language: ${language}):
+---
+${code}
+---`;
+
+  try{
+    const raw = await callGemini(modelSelect.value, verifiedKey, prompt);
+    const parsed = extractJson(raw);
+
+    if(parsed.status === 'correct'){
+      outputBlock.textContent = parsed.output || '(no output)';
+      resultCorrect.classList.add('show');
+    }else{
+      errorExplanation.textContent = parsed.error_explanation || 'The model did not provide details.';
+      fixedCodeBlock.textContent = parsed.fixed_code || '(no fix provided)';
+      resultIncorrect.classList.add('show');
+    }
+    statusText.textContent = '';
+  }catch(err){
+    document.getElementById('apiErrorText').textContent = err.message;
+    resultApiError.classList.add('show');
+    statusText.textContent = '';
+  }finally{
+    checkRunBtn.disabled = false;
+    loadingSpinner.classList.add('d-none');
+  }
+});
+
+getCodeBtn.addEventListener('click', async () => {
+  if(!verifiedKey){
+    return;
+  }
+  const question = questionArea.value.trim();
+  const language = langSelect.value;
+  const languageName = langNames[language] || language;
+
+  if(!question){
+    askStatusText.textContent = 'Please type your question first.';
+    return;
+  }
+
+  resultAskAnswer.classList.remove('show');
+  resultAskError.classList.remove('show');
+  getCodeBtn.disabled = true;
+  askLoadingSpinner.classList.remove('d-none');
+  askStatusText.textContent = 'Generating code...';
+
+  const prompt = `You are a helpful programming tutor. The user is asking a code-related question and wants a working code answer in the ${languageName} programming language.
+
+User's question:
+---
+${question}
+---
+
+Write a complete, correct, ready-to-run ${languageName} code snippet or program that answers the question.
+
+Respond with ONLY a raw JSON object (no markdown fences, no extra text) in exactly this shape:
+
+{
+  "explanation": "a short 1-3 sentence plain explanation of the approach/logic",
+  "code": "the full working code in ${languageName}"
+}`;
+
+  try{
+    const raw = await callGemini(modelSelect.value, verifiedKey, prompt);
+    const parsed = extractJson(raw);
+
+    askExplanation.textContent = parsed.explanation || '';
+    askCodeBlock.textContent = parsed.code || '(no code returned)';
+    resultAskAnswer.classList.add('show');
+    askStatusText.textContent = '';
+  }catch(err){
+    askErrorText.textContent = err.message;
+    resultAskError.classList.add('show');
+    askStatusText.textContent = '';
+  }finally{
+    getCodeBtn.disabled = false;
+    askLoadingSpinner.classList.add('d-none');
+  }
+});
+</script>
+
+</body>
+</html>

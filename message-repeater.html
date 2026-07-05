@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message Repeater</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+  body {
+    background: #f4f6f9;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card-custom {
+    max-width: 600px;
+    width: 100%;
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  }
+  .card-header-custom {
+    background: linear-gradient(135deg, #4e54c8, #8f94fb);
+    color: #fff;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 24px;
+  }
+  textarea#output {
+    background: #fff;
+    font-family: monospace;
+  }
+  .btn-generate {
+    background: #4e54c8;
+    color: #fff;
+  }
+  .btn-generate:hover {
+    background: #3c41a3;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="card card-custom">
+  <div class="card-header-custom">
+    <h4 class="mb-0"><i class="fa-solid fa-repeat me-2"></i>Message Repeater</h4>
+    <small>Type a message, choose a count, get it repeated on new lines</small>
+  </div>
+  <div class="card-body p-4">
+
+    <div class="mb-3">
+      <label class="form-label fw-semibold"><i class="fa-regular fa-pen-to-square me-1"></i>Your message</label>
+      <textarea id="message" class="form-control" rows="2" placeholder="Type your message here..."></textarea>
+    </div>
+
+    <div class="row g-2 align-items-end mb-3">
+      <div class="col-6">
+        <label class="form-label fw-semibold"><i class="fa-solid fa-hashtag me-1"></i>Repeat count</label>
+        <input type="number" id="count" class="form-control" min="1" max="1000" value="5">
+      </div>
+      <div class="col-3 d-grid">
+        <button id="generateBtn" class="btn btn-generate">
+          <i class="fa-solid fa-bolt me-1"></i>Generate
+        </button>
+      </div>
+      <div class="col-3 d-grid">
+        <button id="copyBtn" class="btn btn-outline-secondary">
+          <i class="fa-regular fa-copy me-1"></i>Copy
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label fw-semibold"><i class="fa-solid fa-list me-1"></i>Result</label>
+      <textarea id="output" class="form-control" rows="10" readonly></textarea>
+    </div>
+
+    <div id="toast" class="text-success small mt-1" style="display:none;">
+      <i class="fa-solid fa-check me-1"></i>Copied to clipboard!
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+<script>
+  const messageEl = document.getElementById('message');
+  const countEl = document.getElementById('count');
+  const outputEl = document.getElementById('output');
+  const toastEl = document.getElementById('toast');
+
+  function generate() {
+    const msg = messageEl.value;
+    let n = parseInt(countEl.value, 10) || 0;
+    n = Math.max(0, Math.min(1000, n));
+
+    if (!msg) {
+      outputEl.value = '';
+      return;
+    }
+
+    const lines = [];
+    for (let i = 0; i < n; i++) {
+      lines.push(msg);
+    }
+    outputEl.value = lines.join('\n');
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', generate);
+
+  document.getElementById('copyBtn').addEventListener('click', function () {
+    if (!outputEl.value) return;
+    navigator.clipboard.writeText(outputEl.value).then(function () {
+      toastEl.style.display = 'block';
+      setTimeout(() => toastEl.style.display = 'none', 1500);
+    });
+  });
+
+  // Allow Enter+Ctrl to generate quickly
+  messageEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.ctrlKey) generate();
+  });
+</script>
+</body>
+</html>
