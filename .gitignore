@@ -1,0 +1,16 @@
+# Environment & secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+*.env
+
+# OS & editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Node (if ever used)
+node_modules/
+npm-debug.log*
