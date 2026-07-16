@@ -4,6 +4,9 @@
 .env.*.local
 *.env
 
+# Ignore personal documentation
+GIT-GUIDE-GUJARATI.md
+
 # OS & editor noise
 .DS_Store
 Thumbs.db
